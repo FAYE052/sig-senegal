@@ -6,6 +6,12 @@
         <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="theme-color" content="#2c3e50">
+        <link rel="manifest" href="manifest.json">
+        <link rel="icon" href="images/icon-192.png" sizes="192x192" type="image/png">
+        <link rel="icon" href="images/icon-512.png" sizes="512x512" type="image/png">
+        <link rel="icon" href="images/icon-192.svg" sizes="192x192">
+        <link rel="apple-touch-icon" href="images/icon-192.png">
         <link rel="stylesheet" href="css/leaflet.css">
         <link rel="stylesheet" href="css/L.Control.Locate.min.css">
         <link rel="stylesheet" href="css/qgis2web.css">
@@ -167,6 +173,8 @@
                 <a class="nav-item" onclick="resetView()"><i class="fas fa-home"></i> Accueil</a>
                 <a class="nav-item" onclick="alert('Application Web SIG des limites administratives du Sénégal.\nRéalisée avec QGIS2WEB.')"><i class="fas fa-info-circle"></i> A propos</a>
                 <a class="nav-item" onclick="toggleSidebar('left')"><i class="fas fa-layer-group"></i> Catalogue des données</a>
+                <a class="nav-item" onclick="locateUser()"><i class="fas fa-location-arrow"></i> Localiser</a>
+                <a id="install-btn" class="nav-item" style="display:none" onclick="promptInstall()"><i class="fas fa-download"></i> Installer</a>
                 
                 <div class="dropdown">
                     <a class="nav-item"><i class="fas fa-tools"></i> Outils <i class="fas fa-caret-down" style="margin-left: 5px;"></i></a>
@@ -1596,6 +1604,52 @@
                 modal.style.display = "block";
             }
         }
+
+        // --- PWA: service worker registration & install prompt handler ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(function(reg) { console.log('Service Worker registered.', reg); }).catch(function(err) { console.warn('Service Worker registration failed:', err); });
+        }
+
+        var deferredPrompt;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            var btn = document.getElementById('install-btn');
+            if (btn) btn.style.display = 'inline-flex';
+        });
+
+        function promptInstall() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function(choiceResult) {
+                if (choiceResult.outcome === 'accepted') {
+                    var btn = document.getElementById('install-btn');
+                    if (btn) btn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        }
+
+        // --- Geolocation helpers ---
+        function locateUser() {
+            if (!navigator.geolocation) {
+                alert('Géolocalisation non supportée par ce navigateur.');
+                return;
+            }
+            map.locate({setView: true, maxZoom: 16});
+        }
+
+        map.on('locationfound', function(e) {
+            var latlng = e.latlng || (e.latitude && e.longitude && L.latLng(e.latitude, e.longitude));
+            if (!latlng) return;
+            document.getElementById('coords-display').textContent = 'Lat: ' + latlng.lat.toFixed(5) + ', Lng: ' + latlng.lng.toFixed(5);
+            L.circle(latlng, {radius: e.accuracy || 30, color: '#3388ff', fillOpacity: 0.1}).addTo(map);
+        });
+
+        map.on('locationerror', function(e) {
+            console.warn('Geolocation error', e);
+            alert('Erreur de géolocalisation: ' + (e.message || e.code || 'Erreur inconnue'));
+        });
         </script>
     </body>
 </html>
