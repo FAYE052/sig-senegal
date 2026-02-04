@@ -30,13 +30,13 @@ jobs:
       - name: Generate icons from SVG
         run: node scripts/generate-icons.js
 
-      - name: Commit generated icons
+      - name: Commit generated icons and splashes
         uses: EndBug/add-and-commit@v9
         with:
           author_name: 'github-actions'
           author_email: 'actions@github.com'
-          message: 'chore: generate app icons'
-          add: 'images/icons/**'
+          message: 'chore: generate app icons and splash images'
+          add: 'images/icons/**,images/splash/**'
           push: true
 
       - name: Upload generated icons (debug)
