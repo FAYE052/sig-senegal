@@ -1,0 +1,47 @@
+name: Generate App Icons
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm ci || npm install
+
+      - name: Ensure output dir exists
+        run: mkdir -p images/icons
+
+      - name: Generate icons from SVG
+        run: node scripts/generate-icons.js
+
+      - name: Commit generated icons
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: 'github-actions'
+          author_email: 'actions@github.com'
+          message: 'chore: generate app icons'
+          add: 'images/icons/**'
+          push: true
+
+      - name: Upload generated icons (debug)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: icons
+          path: images/icons

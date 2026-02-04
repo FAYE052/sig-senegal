@@ -1,7 +1,9 @@
-const CACHE_NAME = 'sig-senegal-v1';
+const CACHE_NAME = 'sig-senegal-v2';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
+  '/offline.html',
+  '/manifest.json',
   '/css/leaflet.css',
   '/css/qgis2web.css',
   '/css/L.Control.Locate.min.css',
@@ -41,7 +43,7 @@ self.addEventListener('fetch', event => {
         });
       }).catch(() => {
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match('/offline.html');
         }
       });
     })

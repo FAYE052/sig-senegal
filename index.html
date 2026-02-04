@@ -55,6 +55,8 @@
         }
         #navbar .nav-item:hover { background-color: #34495e; }
         #navbar .nav-item i { margin-right: 6px; }
+        /* Active state for location follow */
+        #navbar .nav-item.active { background-color: #1abc9c; color: #fff; }
         
         /* Main Layout */
         #main-container { flex: 1; display: flex; overflow: hidden; position: relative; }
@@ -1630,25 +1632,80 @@
             });
         }
 
-        // --- Geolocation helpers ---
+        // --- iOS: show add-to-home-screen hint if needed ---
+        function isIos() { return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase()); }
+        function isInStandaloneMode() { return ('standalone' in window.navigator) && (window.navigator.standalone); }
+        if (isIos() && !isInStandaloneMode()) {
+            // create a small banner with instructions
+            var banner = document.createElement('div');
+            banner.id = 'ios-install-banner';
+            banner.style.position = 'fixed';
+            banner.style.bottom = '10px';
+            banner.style.left = '10px';
+            banner.style.right = '10px';
+            banner.style.padding = '10px 12px';
+            banner.style.background = 'rgba(44,62,80,0.95)';
+            banner.style.color = 'white';
+            banner.style.borderRadius = '6px';
+            banner.style.fontSize = '14px';
+            banner.style.zIndex = 4000;
+            banner.style.display = 'flex';
+            banner.style.justifyContent = 'space-between';
+            banner.style.alignItems = 'center';
+            banner.innerHTML = '<div>Pour installer l\'application: appuyez sur <strong>Partager</strong> puis <strong>Sur l\'écran d\'accueil</strong>.</div><button id="ios-install-close" style="background:#1abc9c;border:none;color:#fff;padding:6px 10px;border-radius:4px;cursor:pointer;margin-left:8px;">OK</button>';
+            document.body.appendChild(banner);
+            document.getElementById('ios-install-close').addEventListener('click', function() { banner.parentNode.removeChild(banner); });
+        }
+
+        // --- Geolocation helpers (toggle watch mode, persistent marker) ---
+        var isWatching = false;
+        var userMarker = null;
+        var userAccuracyCircle = null;
+
         function locateUser() {
             if (!navigator.geolocation) {
                 alert('Géolocalisation non supportée par ce navigateur.');
                 return;
             }
-            map.locate({setView: true, maxZoom: 16});
+            var btn = document.querySelector('a[onclick="locateUser()"]');
+            if (!isWatching) {
+                map.locate({setView: true, watch: true, maxZoom: 16});
+                isWatching = true;
+                if (btn) { btn.classList.add('active'); btn.innerHTML = '<i class="fas fa-location-arrow"></i> Suivre'; }
+            } else {
+                map.stopLocate();
+                isWatching = false;
+                if (btn) { btn.classList.remove('active'); btn.innerHTML = '<i class="fas fa-location-arrow"></i> Localiser'; }
+                if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
+                if (userAccuracyCircle) { map.removeLayer(userAccuracyCircle); userAccuracyCircle = null; }
+            }
         }
 
         map.on('locationfound', function(e) {
             var latlng = e.latlng || (e.latitude && e.longitude && L.latLng(e.latitude, e.longitude));
             if (!latlng) return;
             document.getElementById('coords-display').textContent = 'Lat: ' + latlng.lat.toFixed(5) + ', Lng: ' + latlng.lng.toFixed(5);
-            L.circle(latlng, {radius: e.accuracy || 30, color: '#3388ff', fillOpacity: 0.1}).addTo(map);
+            if (userMarker) {
+                userMarker.setLatLng(latlng);
+            } else {
+                userMarker = L.circleMarker(latlng, {radius:6, color:'#0b87ff', fillColor:'#0b87ff', fillOpacity:1}).addTo(map);
+            }
+            if (userAccuracyCircle) {
+                userAccuracyCircle.setLatLng(latlng).setRadius(e.accuracy || 30);
+            } else {
+                userAccuracyCircle = L.circle(latlng, {radius: e.accuracy || 30, color: '#3388ff', fillOpacity: 0.1}).addTo(map);
+            }
         });
 
         map.on('locationerror', function(e) {
             console.warn('Geolocation error', e);
             alert('Erreur de géolocalisation: ' + (e.message || e.code || 'Erreur inconnue'));
+            if (isWatching) {
+                map.stopLocate();
+                isWatching = false;
+                var btn = document.querySelector('a[onclick="locateUser()"]');
+                if (btn) { btn.classList.remove('active'); btn.innerHTML = '<i class="fas fa-location-arrow"></i> Localiser'; }
+            }
         });
         </script>
     </body>
