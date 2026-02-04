@@ -16,12 +16,12 @@ Si vous voulez générer des icônes supplémentaires (tailles iOS/Android) à p
 1. Installez `sharp` : `npm install sharp`
 2. Exécutez le script : `node scripts/generate-icons.js`
 
-Les icônes générées seront placées dans `images/icons/`.
+Les icônes générées seront placées dans `images/icons/` et les écrans de démarrage iOS (splash) dans `images/splash/`.
 
 ---
 
 ### Génération automatique via GitHub Actions ✅
-Un workflow (`.github/workflows/generate-icons.yml`) est inclus pour générer automatiquement les icônes à partir de `images/icon-512.svg` lors d'un push sur `main` ou via un déclencheur manuel (`workflow_dispatch`). Le workflow installe Node.js, exécute `node scripts/generate-icons.js` et commite les images générées dans `images/icons/`.
+Un workflow (`.github/workflows/generate-icons.yml`) est inclus pour générer automatiquement les icônes et les écrans de démarrage à partir de `images/icon-512.svg` lors d'un push sur `main` ou via un déclencheur manuel (`workflow_dispatch`). Le workflow installe Node.js, exécute `node scripts/generate-icons.js` et commite les images générées dans `images/icons/` et `images/splash/`.
 
 ---
 
